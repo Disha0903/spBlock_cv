@@ -1,0 +1,22 @@
+# install_packages.R
+install.packages("dismo", version = "1.3-14")
+install.packages("raster", version = "3.6-26")
+install.packages("rgdal", version = "1.6-7")
+install.packages("terra", version = "1.7-55")
+install.packages("dplyr", version = "1.1.3")
+install.packages("blockCV", version = "3.1-3")
+install.packages("randomForest", version = "4.7-1.1")
+install.packages("stringr", version = "1.5.1")
+install.packages("gbm", version = "2.1.9")
+install.packages("tidyr", version = "1.3.1")
+install.packages("caret", version = "6.0-94")
+install.packages("pROC", version = "1.18.4")
+install.packages("stars", version = "0.6-4")
+install.packages("sf", version = "1.0-15")
+install.packages("ggplot2", version = "3.5.1")
+install.packages("lightgbm", version = "3.3.5")
+install.packages("xgboost", version = "1.7.5.1")
+install.packages("readr", version = "2.1.5")
+install.packages("purrr", version = "1.0.2")
+
+
