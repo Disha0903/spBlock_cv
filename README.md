@@ -1,6 +1,6 @@
-# Foundation for Unbiased Cross-Validation of Spatiotemporal Models for Species Distribution Modeling
+# Foundation for unbiased cross-validation of spatiotemporal models for species distribution modeling
 
-This repository contains the source code for the paper titled "Foundation for Unbiased Cross-Validation of Spatiotemporal Models for Species Distribution Modeling."
+This repository contains the source code for the paper titled " Foundation for unbiased cross-validation of spatiotemporal models for species distribution modeling".
 
 ## Installation
 
@@ -24,33 +24,38 @@ To install `spBlock_cv` and ensure all the compatible dependencies are included 
     renv::restore()
     ```
 
-4. **Install Necessary Packages**:
-    Run the `install_packages.R` script to install all the required packages:
+ **Another option**:
+    Or you can run the `install_packages.R` script to install all the required packages:
     ```r
     source("install_packages.R")
     ```
 
 ## Data
 
-You can find the data in the `data` folder within this repository. Make sure to follow any specific instructions related to the data as mentioned in the paper.
+You can find the data in the `data` folder within this repository. Below is a brief description of the contents of each subfolder:
+
+- **shapefiles**: Contains shapefiles of the area of study, which include Norway and Sweden.
+- **train_2003**: Contains climate features for training the models.
+- **test_2003**: Contains climate features for testing the models.
+- **soil**: Includes soil features relevant to the study.
+- **spatio_temp**: Includes climate features with different time periods for spatio-temporal cross-validation. For more details, see the description in the paper and follow the instructions in `code.R`.
+
+
 
 ## Usage
 
 To use the scripts and run the models, follow these steps:
 
-1. **Source the Scripts**:
+**Source the Scripts**:
     Ensure you have sourced the necessary scripts in your R session:
     ```r
-    source("script1.R")  # Contains all the functions
-    source("script2.R")  # Uses the functions defined in script1.R
+    source("func.R")  # Contains all the functions
+    source("code.R")  # Uses the functions defined in func.R
     ```
+    
+## Results
 
-2. **Run the Analysis**:
-    Follow the instructions in the paper or any additional documentation provided in this repository to run the analysis.
-
-## Hyperparameter Tuning
-
-We utilized GridSearch for hyperparameter tuning. The `table_hyperparams.csv` file lists the hyperparameters for each model. From the set of possible hyperparameter combinations, we randomly selected 120 combinations for each model and used them in the GridSearch.
+Results of metrics from hyperparameter tuning for all models are stored in the `results` folder.
 
 ## Citation
 
