@@ -1,7 +1,7 @@
 # Foundation for unbiased cross-validation of spatiotemporal models for species distribution modeling
 
 This repository contains the source code for the paper titled "Foundation for unbiased cross-validation of spatiotemporal models for species distribution modeling".
-
+![A) A general workflow of SDM focuses on predicting habitat suitability for species in future scenarios. B) Specific methodology of our study, including data collection across different time intervals, hyperparameter optimization, and validation processes through both traditional and spatial cross-validation techniques](article_workflow.png)
 ## Installation
 
 To install `spBlock_cv` and ensure all the compatible dependencies are included without affecting your system R installation, follow the steps below:
@@ -57,7 +57,7 @@ To use the scripts and run the models, follow these steps:
     
 ## Results
 
-Results of metrics from hyperparameter tuning for all models are stored in the `results` folder.
+Results of metrics from hyperparameter tuning for all models are stored in the `results/hpm` folder.
 
 ## Citation
 
