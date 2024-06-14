@@ -1,3 +1,4 @@
+#Imprort libraries, to install necessary packages read READ.me
 library(dismo)
 library(raster)
 library(rgdal)
@@ -21,7 +22,9 @@ library(readr)
 library(purrr)
 sessionInfo()
 
-setwd('C:/Users/User/Desktop/proj_cv/train_2003')
+##My paths are examples for you, please change them. `C:/Users/User/Desktop/proj_cv/` is the path for data folder. 
+
+setwd('C:/Users/User/Desktop/proj_cv/train_2003') #Set your directory
 
 #Shape files of Norway and Sweden
 no_sh <- shapefile("C:/Users/User/Desktop/proj_cv/shapefiles/NOR_adm/NOR_adm0.shp")
@@ -68,8 +71,8 @@ env_data <- function(lst_rasters){
 cropped_env <- env_data(all_rasters)
 
 
-setwd('C:/Users/User/Desktop/proj_cv/soil/res_changed')
-soil <- list.files(path = "C:/Users/User/Desktop/proj_cv/soil/res_changed", pattern='.asc', 
+setwd('C:/Users/User/Desktop/proj_cv/soil')
+soil <- list.files(path = "C:/Users/User/Desktop/proj_cv/soil", pattern='.asc', 
                    all.files=TRUE, full.names=FALSE)
 
 soil <- lapply(soil, raster)
@@ -81,7 +84,7 @@ crs(cropped_soil) <- '+proj=longlat +datum=WGS84'
 
 
 
-elev <- raster('C:/Users/User/Desktop/proj_cv/output/wc2.1_2.5m_elev.asc$')
+elev <- raster('C:/Users/User/Desktop/proj_cv/elevation/wc2.1_2.5m_elev.asc$')
 masked_elev <- mask(x = elev, mask = sh)
 cropped_elev <- crop(x = masked_elev, y = extent(sh))
 crs(cropped_elev) <- '+proj=longlat +datum=WGS84'
@@ -90,12 +93,12 @@ final_stack <- stack(c(cropped_env, cropped_elev,cropped_soil))
 
 
 #Species data
-gen_cam_occ <- read.csv('C:/Users/User/Desktop/proj_cv/spThin/occ_gen.csv') #occurrence points 
-gen_cam <- read.csv('C:/Users/User/Desktop/proj_cv/gen_2003_2018.csv') #all points 
+gen_cam_occ <- read.csv('C:/Users/User/Desktop/proj_cv/species/occ_gen.csv') #occurrence points 
+gen_cam <- read.csv('C:/Users/User/Desktop/proj_cv/species/gen_2003_2018.csv') #all points 
 
 
-gen_cam_past_abs <- read.csv('C:/Users/User/Desktop/proj_cv/gen_1994_2002.csv') #absence data for past time interval
-gen_cam_past_occ <- read.csv('C:/Users/User/Desktop/proj_cv/spThin/past_occ_gen.csv') #occurrence data for past time interval
+gen_cam_past_abs <- read.csv('C:/Users/User/Desktop/proj_cv/species/gen_1994_2002.csv') #absence data for past time interval
+gen_cam_past_occ <- read.csv('C:/Users/User/Desktop/proj_cv/species/past_occ_gen.csv') #occurrence data for past time interval
 gen_cam_past_occ$occurrenceStatus <- 1
 gen_cam_past_abs <- gen_cam_past_abs[gen_cam_past_abs$occurrenceStatus ==0,]
 
