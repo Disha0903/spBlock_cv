@@ -2,6 +2,10 @@
 
 This repository contains the source code for the paper titled "Foundation for unbiased cross-validation of spatiotemporal models for species distribution modeling".
 ![A) A general workflow of SDM focuses on predicting habitat suitability for species in future scenarios. B) Specific methodology of our study, including data collection across different time intervals, hyperparameter optimization, and validation processes through both traditional and spatial cross-validation techniques](article_workflow.png)
+
+A) A general workflow of SDM focuses on predicting habitat suitability for species in future scenarios. B) Specific methodology of our study, including data collection across different time intervals, hyperparameter optimization, and validation processes through both traditional and spatial cross-validation techniques
+
+
 ## Installation
 
 To install `spBlock_cv` and ensure all the compatible dependencies are included without affecting your system R installation, follow the steps below:
@@ -38,7 +42,7 @@ You can find the data in the `data` folder within this repository. Below is a br
 - **train_2003**: Contains climate features for training the models.
 - **test_2003**: Contains climate features for testing the models.
 - **soil**: Includes soil features relevant to the study.
-- **spatio_temp**: Includes climate features with different time periods for spatio-temporal cross-validation. For more details, see the description in the paper and follow the instructions in `code.R`.
+- **spatiotemp**: Includes climate features with different time periods for spatio-temporal cross-validation. For more details, see the description in the paper and follow the instructions in `code.R`.
 - **elevation**: Contains elevation data.
 - **species**: Contains species occurrence or absence data.
 
@@ -50,6 +54,8 @@ To use the scripts and run the models, follow these steps:
 
 **Source the Scripts**:
     Ensure you have sourced the necessary scripts in your R session:
+
+
     ```r
     source("func.R")  # Contains all the functions
     source("code.R")  # Uses the functions defined in func.R
