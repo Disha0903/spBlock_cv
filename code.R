@@ -22,16 +22,16 @@ library(readr)
 library(purrr)
 sessionInfo()
 
-##My paths are examples for you, please change them. `C:/Users/User/Desktop/proj_cv/` is the path for data folder. 
+##My paths are examples for you, please change them. `/app/proj_cv/data` is the path for data folder. 
 
-setwd('C:/Users/User/Desktop/proj_cv/train_2003') #Set your directory
+setwd('/app/proj_cv/data/train_2003') #Set your directory
 
 #Shape files of Norway and Sweden
-no_sh <- shapefile("C:/Users/User/Desktop/proj_cv/shapefiles/NOR_adm/NOR_adm0.shp")
-sw_sh <- shapefile("C:/Users/User/Desktop/proj_cv/shapefiles/SWE_adm/SWE_adm0.shp")
+no_sh <- shapefile("/app/proj_cv/data/shapefiles/NOR_adm/NOR_adm0.shp")
+sw_sh <- shapefile("/app/proj_cv/data/shapefiles/SWE_adm/SWE_adm0.shp")
 sh <- rbind(no_sh, sw_sh, makeUniqueIDs = TRUE)
 
-all_rasters <- list.files(path = "C:/Users/User/Desktop/proj_cv/train_2003", pattern='.asc', 
+all_rasters <- list.files(path = "/app/proj_cv/data/train_2003", pattern='.asc', 
                           all.files=TRUE, full.names=FALSE)
 
 
@@ -71,8 +71,8 @@ env_data <- function(lst_rasters){
 cropped_env <- env_data(all_rasters)
 
 
-setwd('C:/Users/User/Desktop/proj_cv/soil')
-soil <- list.files(path = "C:/Users/User/Desktop/proj_cv/soil", pattern='.asc', 
+setwd('/app/proj_cv/data/soil')
+soil <- list.files(path = "/app/proj_cv/data/soil", pattern='.asc', 
                    all.files=TRUE, full.names=FALSE)
 
 soil <- lapply(soil, raster)
@@ -84,7 +84,7 @@ crs(cropped_soil) <- '+proj=longlat +datum=WGS84'
 
 
 
-elev <- raster('C:/Users/User/Desktop/proj_cv/elevation/wc2.1_2.5m_elev.asc$')
+elev <- raster('/app/proj_cv/data/elevation/wc2.1_2.5m_elev.asc$')
 masked_elev <- mask(x = elev, mask = sh)
 cropped_elev <- crop(x = masked_elev, y = extent(sh))
 crs(cropped_elev) <- '+proj=longlat +datum=WGS84'
@@ -93,12 +93,12 @@ final_stack <- stack(c(cropped_env, cropped_elev,cropped_soil))
 
 
 #Species data
-gen_cam_occ <- read.csv('C:/Users/User/Desktop/proj_cv/species/occ_gen.csv') #occurrence points 
-gen_cam <- read.csv('C:/Users/User/Desktop/proj_cv/species/gen_2003_2018.csv') #all points 
+gen_cam_occ <- read.csv('/app/proj_cv/data/species/occ_gen.csv') #occurrence points 
+gen_cam <- read.csv('/app/proj_cv/data/species/gen_2003_2018.csv') #all points 
 
 
-gen_cam_past_abs <- read.csv('C:/Users/User/Desktop/proj_cv/species/gen_1994_2002.csv') #absence data for past time interval
-gen_cam_past_occ <- read.csv('C:/Users/User/Desktop/proj_cv/species/past_occ_gen.csv') #occurrence data for past time interval
+gen_cam_past_abs <- read.csv('/app/proj_cv/data/species/gen_1994_2002.csv') #absence data for past time interval
+gen_cam_past_occ <- read.csv('/app/proj_cv/data/species/past_occ_gen.csv') #occurrence data for past time interval
 gen_cam_past_occ$occurrenceStatus <- 1
 gen_cam_past_abs <- gen_cam_past_abs[gen_cam_past_abs$occurrenceStatus ==0,]
 
@@ -134,8 +134,8 @@ mydata <- mydata[-1]
 
 
 ##Test of out
-setwd("C:/Users/User/Desktop/proj_cv/test_2003")
-all_rasters_test <- list.files(path = "C:/Users/User/Desktop/proj_cv/test_2003", pattern='.asc', 
+setwd("/app/proj_cv/data/test_2003")
+all_rasters_test <- list.files(path = "/app/proj_cv/data/test_2003", pattern='.asc', 
                                all.files=TRUE, full.names=FALSE)
 cropped_env_test <- env_data(all_rasters_test)
 final_past <- stack(cropped_env_test, cropped_elev,cropped_soil)
