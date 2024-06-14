@@ -90,12 +90,12 @@ final_stack <- stack(c(cropped_env, cropped_elev,cropped_soil))
 
 
 #Species data
-gen_cam_occ <- read.csv('C:/Users/User/Desktop/proj_cv/spThin/occ_0.5_thin_thin1.csv')
-gen_cam <- read.csv('C:/Users/User/Desktop/proj_cv/gen_2003_2018.csv')
+gen_cam_occ <- read.csv('C:/Users/User/Desktop/proj_cv/spThin/occ_gen.csv') #occurrence points 
+gen_cam <- read.csv('C:/Users/User/Desktop/proj_cv/gen_2003_2018.csv') #all points 
 
 
-gen_cam_past_abs <- read.csv('C:/Users/User/Desktop/proj_cv/gen_1994_2002.csv')
-gen_cam_past_occ <- read.csv('C:/Users/User/Desktop/proj_cv/spThin/past_occ_0.5_thin_thin2.csv')
+gen_cam_past_abs <- read.csv('C:/Users/User/Desktop/proj_cv/gen_1994_2002.csv') #absence data for past time interval
+gen_cam_past_occ <- read.csv('C:/Users/User/Desktop/proj_cv/spThin/past_occ_gen.csv') #occurrence data for past time interval
 gen_cam_past_occ$occurrenceStatus <- 1
 gen_cam_past_abs <- gen_cam_past_abs[gen_cam_past_abs$occurrenceStatus ==0,]
 
@@ -103,7 +103,7 @@ gen_cam_past_abs <- gen_cam_past_abs[,c('occurrenceStatus', 'decimalLongitude', 
 gen_cam_past_occ <- gen_cam_past_occ[,c('occurrenceStatus', 'decimalLongitude', 'decimalLatitude')]
 gen_cam_past <- rbind(gen_cam_past_abs, gen_cam_past_occ)
 
-#Pre process data 
+#Pre-process data 
 preprocess_data <- function(occ_df, abs_df){
   #species data
   occ_df$occurrenceStatus <- 1
