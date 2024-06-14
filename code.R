@@ -463,10 +463,3 @@ env_lgb_retrain(hyperparams_lgbm, cluster_data, cluster_count, mydata, mydata_pa
 env_lgb_lastfold(hyperparams_lgbm, cluster_data, cluster_count, mydata, mydata_past)
 
 
-setwd("C:/Users/User/Documents/my_phd/paper/paper")
-library(renv)
-renv::init()
-
-source("install_packages.R")
-renv::snapshot()
-getwd()
