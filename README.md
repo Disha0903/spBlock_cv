@@ -53,9 +53,8 @@ You can find the data in the `data` folder within this repository. Below is a br
 To use the scripts and run the models, follow these steps:
 
 **Source the Scripts**:
+    
     Ensure you have sourced the necessary scripts in your R session:
-
-
     ```r
     source("func.R")  # Contains all the functions
     source("code.R")  # Uses the functions defined in func.R
@@ -67,6 +66,6 @@ Results of metrics from hyperparameter tuning for all models are stored in the `
 
 ## Citation
 
-If you use this code or data in your research, please cite our paper:
+If you use this code or data in your research, please cite our paper
 
 
