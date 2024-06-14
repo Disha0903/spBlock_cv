@@ -1,6 +1,6 @@
 # Foundation for unbiased cross-validation of spatiotemporal models for species distribution modeling
 
-This repository contains the source code for the paper titled " Foundation for unbiased cross-validation of spatiotemporal models for species distribution modeling".
+This repository contains the source code for the paper titled "Foundation for unbiased cross-validation of spatiotemporal models for species distribution modeling".
 
 ## Installation
 
@@ -39,6 +39,8 @@ You can find the data in the `data` folder within this repository. Below is a br
 - **test_2003**: Contains climate features for testing the models.
 - **soil**: Includes soil features relevant to the study.
 - **spatio_temp**: Includes climate features with different time periods for spatio-temporal cross-validation. For more details, see the description in the paper and follow the instructions in `code.R`.
+- **elevation**: Contains elevation data.
+- **species**: Contains species occurrence or absence data.
 
 
 
