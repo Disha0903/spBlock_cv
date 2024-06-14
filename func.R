@@ -1,3 +1,7 @@
+##This script contains all fucntions which are used in script code.R
+
+## If you would like to save the best models you can uncomment saveRDS() function.
+
 ##GBM
 ################################################################
 ###Spatial
@@ -105,8 +109,8 @@ sp_gbm_retrain <- function(block_sizes, model_names, hyperparams, mydata, pa_dat
                                                      ROC_AUC_valid = ROC_AUC_valid))
     }
     
-    #saveRDS(best_model, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/", model_name, "_best_model_", j, ".rds"))
-    #saveRDS(best_model_valid, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/", model_name, "_best_model_valid.rds"))
+    #saveRDS(best_model, paste0("/app/proj_cv/results/models/", model_name, "_best_model_", ".rds"))
+    #saveRDS(best_model_valid, paste0("/app/proj_cv/results/models/", model_name, "_best_model_valid.rds"))
     
     write.csv(results, paste0("/app/proj_cv/results/", model_name, "_results.csv"))
     write.csv(results_past, paste0("/app/proj_cv/results/", model_name, "_results_past.csv"))
@@ -221,8 +225,8 @@ sp_gbm_lastfold <- function(block_sizes, model_names, hyperparams, mydata, pa_da
                                                      ROC_AUC_valid = ROC_AUC_valid))
     }
     
-    #saveRDS(best_model, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/", model_name, "_best_model_", j, ".rds"))
-    #saveRDS(best_model_valid, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/", model_name, "_best_model_valid.rds"))
+    #saveRDS(best_model, paste0("/app/proj_cv/results/models/", model_name, "_best_model_lf", ".rds"))
+    #saveRDS(best_model_valid, paste0("/app/proj_cv/results/models/", model_name, "_best_model_valid_lf.rds"))
     
     write.csv(results, paste0("/app/proj_cv/results/", model_name, "_results_lf.csv"))
     write.csv(results_past, paste0("/app/proj_cv/results/", model_name, "_results_past_lf.csv"))
@@ -321,8 +325,8 @@ random_gbm_retrain <- function(hyperparams, mydata, pa_data, cropped_env, mydata
                                                    ROC_AUC_valid = ROC_AUC_valid))
     
     # Save the best model for the current hyperparameter combination
-    #saveRDS(best_model, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/gbm_random_best_model.rds"))
-    #saveRDS(best_model_valid, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/gbm_random_best_model_valid.rds"))
+    #saveRDS(best_model, paste0("/app/proj_cv/results/models/gbm_random_best_model.rds"))
+    #saveRDS(best_model_valid, paste0("/app/proj_cv/results/models/gbm_random_best_model_valid.rds"))
     
     write.csv(results, "/app/proj_cv/results/gbm_random_results.csv")
     write.csv(results_past, "/app/proj_cv/results/gbm_random_results_past.csv")
@@ -413,8 +417,8 @@ random_gbm_lastfold <- function(hyperparams, mydata, pa_data, cropped_env, mydat
                                                    ROC_AUC_valid = ROC_AUC_valid))
     
     # Save the best model for the current hyperparameter combination
-    #saveRDS(best_model, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/gbm_random_best_model.rds"))
-    #saveRDS(best_model_valid, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/gbm_random_best_model_valid.rds"))
+    #saveRDS(best_model, paste0("/app/proj_cv/results/models/gbm_random_best_model_lf.rds"))
+    #saveRDS(best_model_valid, paste0("/app/proj_cv/results/models/gbm_random_best_model_valid_lf.rds"))
     
     write.csv(results, "/app/proj_cv/results/gbm_random_results_lf.csv")
     write.csv(results_past, "/app/proj_cv/results/gbm_random_results_past_lf.csv")
@@ -535,8 +539,8 @@ temp_gbm_retrain <- function(time_cropped, time_pa_data, time_intervals_data, bl
                               FUN = function(x) mean(as.numeric(x), na.rm = TRUE))
     
     
-    #saveRDS(best_model, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/", model_name, "_best_model_", j, ".rds"))
-    #saveRDS(best_model_valid, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/", model_name, "_best_model_valid.rds"))
+    #saveRDS(best_model, paste0("/app/proj_cv/results/models/", model_name, "_best_model_", j, ".rds"))
+    #saveRDS(best_model_valid, paste0("/app/proj_cv/results/models/", model_name, "_best_model_valid.rds"))
     
     write.csv(results, paste0("/app/proj_cv/results/", model_name, "_results.csv"))
     write.csv(results_past, paste0("/app/proj_cv/results/", model_name, "_results_past.csv"))
@@ -651,8 +655,8 @@ temp_gbm_lastfold <- function(time_cropped, time_pa_data, time_intervals_data, b
                               data = combined_results_past,
                               FUN = function(x) mean(as.numeric(x), na.rm = TRUE))
     
-    #saveRDS(best_model, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/", model_name, "_best_model_", j, ".rds"))
-    #saveRDS(best_model_valid, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/", model_name, "_best_model_valid.rds"))
+    #saveRDS(best_model, paste0("/app/proj_cv/results/models/", model_name, "_best_model_", j, ".rds"))
+    #saveRDS(best_model_valid, paste0("/app/proj_cv/results/models/", model_name, "_best_model_valid.rds"))
     
     write.csv(results, paste0("/app/proj_cv/results/", model_name, "_results_lf.csv"))
     write.csv(results_past, paste0("/app/proj_cv/results/", model_name, "_results_past_lf.csv"))
@@ -775,8 +779,8 @@ sp_rf_retrain <- function(block_sizes, model_names, hyperparams_rf, mydata, pa_d
     }
     
     # Save the best model for the current hyperparameter combination
-    #saveRDS(best_model, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/",model_name, "_best_model_",j, ".rds"))
-    #saveRDS(best_model_valid, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/",model_name, '_best_model_valid',j, '.rds'))
+    #saveRDS(best_model, paste0("/app/proj_cv/results/models/",model_name, "_best_model_", ".rds"))
+    #saveRDS(best_model_valid, paste0("/app/proj_cv/results/models/",model_name, '_best_model_valid', '.rds'))
     
     write.csv(results, paste0("/app/proj_cv/results/", model_name, "_results.csv"))
     write.csv(results_past, paste0("/app/proj_cv/results/", model_name, "_results_past.csv"))
@@ -877,7 +881,9 @@ sp_rf_lastfold <- function(block_sizes, model_names, hyperparams_rf, mydata, pa_
       
     }
     
-   
+    #saveRDS(best_model, paste0("/app/proj_cv/results/models/",model_name, "_best_model_lf", ".rds"))
+    #saveRDS(best_model_valid, paste0("/app/proj_cv/results/models/",model_name, '_best_model_valid_lf', '.rds'))
+    
     write.csv(results, paste0("/app/proj_cv/results/", model_name, "_results_lf.csv"))
     write.csv(results_past, paste0("/app/proj_cv/results/", model_name, "_results_past_lf.csv"))
   }
@@ -1258,8 +1264,8 @@ sp_xgb_retrain <- function(block_sizes, model_names, hyperparams_xgb, mydata, pa
     }
     
     # Save the best model for the current hyperparameter combination
-    #saveRDS(best_model,paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/", model_name, "_best_model_", j, ".rds"))
-    #saveRDS(best_model_valid, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/", model_name, "_best_model_valid.rds"))
+    #saveRDS(best_model,paste0("/app/proj_cv/results/models/", model_name, "_best_model_", ".rds"))
+    #saveRDS(best_model_valid, paste0("/app/proj_cv/results/models/", model_name, "_best_model_valid.rds"))
     
     # Save the results and results_past
     write.csv(results, file = paste0("/app/proj_cv/results/", model_name, "_results.csv"))
@@ -1373,6 +1379,10 @@ sp_xgb_lastfold <- function(block_sizes, model_names, hyperparams_xgb, mydata, p
                                                      colsample_bylevel = hyperparams_xgb$colsample_bylevel[j],
                                                      ROC_AUC_valid = ROC_AUC_valid))
     }
+
+
+    #saveRDS(best_model,paste0("/app/proj_cv/results/models/", model_name, "_best_model_lf", ".rds"))
+    #saveRDS(best_model_valid, paste0("/app/proj_cv/results/models/", model_name, "_best_model_valid_lf.rds"))
     
     # Save the results and results_past
     write.csv(results, file = paste0("/app/proj_cv/results/", model_name, "_results_lf.csv"))
@@ -1750,8 +1760,8 @@ sp_lgb_retrain <- function(block_sizes, model_names, hyperparams_lgbm, mydata, p
     }
     
 
-    #saveRDS(best_model, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/", model_name, "_best_model_", j, ".rds"))
-    #saveRDS(best_model_valid, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/", model_name, "_best_model_valid.rds"))
+    #saveRDS(best_model, paste0("/app/proj_cv/results//models/", model_name, "_best_model_", ".rds"))
+    #saveRDS(best_model_valid, paste0("/app/proj_cv/results/models/", model_name, "_best_model_valid.rds"))
     
     write.csv(results, file = paste0("/app/proj_cv/results/", model_name, "_results.csv"))
     write.csv(results_past, file = paste0("/app/proj_cv/results/", model_name, "_results_past.csv"))
@@ -1882,8 +1892,8 @@ sp_lgb_lastfold <- function(block_sizes, model_names, hyperparams_lgbm, mydata, 
     }
     
     # Save the best model for the current hyperparameter combination
-    #saveRDS(best_model, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/", model_name, "_best_model_", j, ".rds"))
-    #saveRDS(best_model_valid, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/models/", model_name, "_best_model_valid.rds"))
+    #saveRDS(best_model, paste0("/app/proj_cv/results/models/", model_name, "_best_model_lf", ".rds"))
+    #saveRDS(best_model_valid, paste0("/app/proj_cv/results/models/", model_name, "_best_model_valid_lf.rds"))
     
     # Save the results and results_past
     write.csv(results, file = paste0("/app/proj_cv/results/", model_name, "_results_lf.csv"))
@@ -2222,23 +2232,23 @@ spatiotemp_env_data <- function(cropped_elev,cropped_soil,
                                 temp1,temp2,temp3,temp4,env_data) {
   
   
-  setwd('/app/proj_cv/spatio_temp/temp1')
-  temp1_rasters <- list.files(path = "/app/proj_cv/spatio_temp/temp1", pattern='.asc', 
+  setwd('/app/proj_cv/spatiotemp/temp1')
+  temp1_rasters <- list.files(path = "/app/proj_cv/spatiotemp/temp1", pattern='.asc', 
                               all.files=TRUE, full.names=FALSE)
   cropped_temp1 <- env_data(temp1_rasters)
   
-  setwd('/app/proj_cv/spatio_temp/temp2')
-  temp2_rasters <- list.files(path = "/app/proj_cv/spatio_temp/temp2", pattern='.asc', 
+  setwd('/app/proj_cv/spatiotemp/temp2')
+  temp2_rasters <- list.files(path = "/app/proj_cv/spatiotemp/temp2", pattern='.asc', 
                               all.files=TRUE, full.names=FALSE)
   cropped_temp2 <- env_data(temp2_rasters)
   
-  setwd('/app/proj_cv/spatio_temp/temp3')
-  temp3_rasters <- list.files(path = "/app/proj_cv/spatio_temp/temp3", pattern='.asc', 
+  setwd('/app/proj_cv/spatiotemp/temp3')
+  temp3_rasters <- list.files(path = "/app/proj_cv/spatiotemp/temp3", pattern='.asc', 
                               all.files=TRUE, full.names=FALSE)
   cropped_temp3 <- env_data(temp3_rasters)
   
-  setwd('/app/proj_cv/spatio_temp/temp4')
-  temp4_rasters <- list.files(path = "/app/proj_cv/spatio_temp/temp4", pattern='.asc', 
+  setwd('/app/proj_cv/spatiotemp/temp4')
+  temp4_rasters <- list.files(path = "/app/proj_cv/spatiotemp/temp4", pattern='.asc', 
                               all.files=TRUE, full.names=FALSE)
   cropped_temp4 <- env_data(temp4_rasters)
   
