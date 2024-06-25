@@ -66,6 +66,7 @@ Results of metrics from hyperparameter tuning for all models are stored in the `
 
 ## Citation
 
-If you use this code or data in your research, please cite our paper
+If you use this code or data in your research, please cite our paper:
+TBD
 
 
