@@ -1,7 +1,7 @@
 # Foundation for unbiased cross-validation of spatiotemporal models for species distribution modeling
 
-This repository contains the source code for the paper titled "Foundation for unbiased cross-validation of spatiotemporal models for species distribution modeling".
-![A) A general workflow of SDM focuses on predicting habitat suitability for species in future scenarios. B) Specific methodology of our study, including data collection across different time intervals, hyperparameter optimization, and validation processes through both traditional and spatial cross-validation techniques](article_workflow.png)
+This repository contains the source code for the paper titled "Foundation for unbiased cross-validation of spatio-temporal models for species distribution modeling".
+![A) A general workflow of SDM focuses on predicting habitat suitability for species in future scenarios. B) Specific methodology of our study, including data collection across different time intervals, hyperparameter optimization, and validation processes through both traditional and spatial cross-validation techniques](workflow.png)
 
 A) A general workflow of SDM focuses on predicting habitat suitability for species in future scenarios. B) Specific methodology of our study, including data collection across different time intervals, hyperparameter optimization, and validation processes through both traditional and spatial cross-validation techniques
 
