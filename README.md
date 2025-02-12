@@ -60,9 +60,7 @@ To use the scripts and run the models, follow these steps:
     source("code.R")  # Uses the functions defined in func.R
     ```
     
-## Results
 
-Results of metrics from hyperparameter tuning for all models are stored in the `results/hpm` folder.
 
 ## Citation
 
