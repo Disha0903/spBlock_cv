@@ -35,6 +35,7 @@ no_sh <- shapefile(file.path(data_path, "shapefiles/NOR_adm/NOR_adm0.shp"))
 sw_sh <- shapefile(file.path(data_path, "shapefiles/SWE_adm/SWE_adm0.shp"))
 sh <- rbind(no_sh, sw_sh, makeUniqueIDs = TRUE)
 
+
 # ---- ENVIRONMENTAL STACKS ----
 train_dir <- file.path(data_path, "train_2003")
 all_rasters <- list.files(train_dir, pattern = ".asc", full.names = TRUE)
@@ -155,4 +156,65 @@ print(table(time_intervals_data[[1]]$occurrenceStatus))
 block_sizes <- c(200000, 422000, 600000)
 model_names <- c("gbm_spt200", "gbm_spt422", "gbm_spt600")
 spt_gbm(time_cropped, time_pa_data, time_intervals_data, block_sizes, model_names, hyperparams, in_time_data, out_of_time_data, k = 5) #example of gbm modelling
+
+
+
+# --- Environmnetal CV  ---
+# Extract only environmental features for clustering (exclude label) ---
+env_data_only <- in_time_data[, !(names(in_time_data) %in% "occurrenceStatus")]
+
+# --- Determine optimal number of clusters (k) using elbow method ---
+wcss <- numeric(10)
+for (i in 1:10) {
+  kmeans_result <- kmeans(env_data_only, centers = i, nstart = 10)
+  wcss[i] <- kmeans_result$tot.withinss
+}
+plot(1:10, wcss, type = 'b', xlab = 'Number of Clusters', ylab = 'Within-Cluster SS (WCSS)')
+
+# --- Fit K-means using chosen k (e.g., k=4 based on elbow plot) ---
+set.seed(123)
+k_optimal <- 4
+kmeans_result <- kmeans(env_data_only, centers = k_optimal, nstart = 10)
+
+# --- Assign each point to a cluster ---
+cluster_assignments <- kmeans_result$cluster
+
+# --- Initialize cluster list, enforcing class diversity ---
+min_class_count <- 4
+cluster_data <- list()
+cluster_count <- max(cluster_assignments)
+
+for (i in 1:cluster_count) {
+  cluster_i <- in_time_data[cluster_assignments == i, ]
+  class_distribution <- table(cluster_i$occurrenceStatus)
+  
+  # Keep if both classes are sufficiently represented
+  if (sum(class_distribution >= min_class_count) >= 2) {
+    cluster_data[[i]] <- cluster_i
+  } else {
+    # Try merging with a cluster that has the opposite class
+    opposite_class <- ifelse(names(class_distribution)[which.max(class_distribution)] == "1", 0, 1)
+    for (j in setdiff(1:cluster_count, i)) {
+      cluster_j <- in_time_data[cluster_assignments == j, ]
+      if (opposite_class %in% cluster_j$occurrenceStatus) {
+        cluster_data[[i]] <- rbind(cluster_i, cluster_j)
+        cluster_data[[j]] <- NULL
+        break
+      }
+    }
+  }
+}
+
+# --- Clean up any NULLs due to merges ---
+cluster_data <- cluster_data[!sapply(cluster_data, is.null)]
+cluster_count <- length(cluster_data)
+
+cat("Final number of usable clusters: ", cluster_count, "\n")
+
+# --- Run environmental blocking models (combined: retrain + lastfold) ---
+env_gbm(hyperparams, cluster_data, cluster_count, in_time_data, out_of_time_data, 'gbm_env')
+env_rf(hyperparams_rf, cluster_data, cluster_count, in_time_data, out_of_time_data, 'rf_env')
+env_xgb(hyperparams_xgb, cluster_data, cluster_count, in_time_data, out_of_time_data, 'xgb_env')
+env_lgb(hyperparams_lgbm, cluster_data, cluster_count, in_time_data, out_of_time_data, 'lgb_env')
+
 
