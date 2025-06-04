@@ -56,16 +56,20 @@ To use the scripts and run the models, follow these steps:
 ```r
 source("functions/functions_spBlock.R") # Contains model training functions 
 source("functions/functions_preprocessing.R") # Contains data preprocessing functions
-source("config/hyperparams.R") # Defines hyperparameter grids```
+source("config/hyperparams.R") # Defines hyperparameter grids
+```
 
 
 **Run main workflow**:
 
 ```r
-source("main.R") # Loads data, performs spatial / spatio-temporal CV, runs models ``` 
+source("main.R") # Loads data, performs spatial / spatio-temporal CV, runs models
+ ``` 
 
     
+## The code and associated dataset used in this study are archived on Zenodo:
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15592019.svg)](https://doi.org/10.5281/zenodo.15592019)
 
 ## Citation
 
