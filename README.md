@@ -59,6 +59,9 @@ source("functions_spBlock.R")         # Contains model training functions
 source("functions_preprocessing.R")   # Contains data preprocessing functions
 source("hyperparams.R")               # Defines hyperparameter grids (optional)
 
+source("main.R")   # Run main workflow 
+
+
     
 
 
