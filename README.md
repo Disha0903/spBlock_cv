@@ -48,19 +48,15 @@ You can find the data in the `data` folder within this repository. Below is a br
 
 
 
-## Usage
+## Usage 
+To use the scripts and run the models, follow these steps: 
+**Source the necessary function files**: 
+```r source("functions/functions_spBlock.R") # Contains model training functions 
+source("functions/functions_preprocessing.R") # Contains data preprocessing functions
+source("config/hyperparams.R") # Defines hyperparameter grids```
 
-To use the scripts and run the models, follow these steps:
-
-**Source the necessary function files**:
-
-```r
-source("functions_spBlock.R")         # Contains model training functions
-source("functions_preprocessing.R")   # Contains data preprocessing functions
-source("hyperparams.R")               # Defines hyperparameter grids (optional)
-
-source("main.R")   # Run main workflow 
-
+**Run main workflow**: 
+```r source("main.R") # Loads data, performs spatial / spatio-temporal CV, runs models ``` 
 
     
 
