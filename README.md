@@ -56,9 +56,15 @@ To use the scripts and run the models, follow these steps:
     
     Ensure you have sourced the necessary scripts in your R session:
     ```r
-    source("func.R")  # Contains all the functions
-    source("code.R")  # Uses the functions defined in func.R
+    # Source the necessary function files
+source("functions_spBlock.R")         # Contains model training functions
+source("functions_preprocessing.R")   # Contains data preprocessing functions
+source("hyperparams.R")               # Defines hyperparameter grids (optional)
+
     ```
+    ```
+    # Run main workflow
+source("main.R")   # Loads data, performs spatial / spatio-temporal CV, runs models ```
     
 
 
