@@ -1948,3 +1948,826 @@ spt_lgb <- function(time_cropped, time_pa_data, time_intervals_data, block_sizes
   write.csv(agg_results_past_lf, paste0(your_dir, model_name, "_results_past_lf.csv"), row.names = FALSE)
 }
 
+
+
+
+
+
+
+
+
+                                    
+
+########################################################## --- FORWARD CHAINING CV FUNCTIONS --- #####################################################################
+forward_chaining_gbm <- function(time_intervals_data, hyperparams, out_of_time_data) {
+  results_list <- list()
+  results_past <- data.frame()
+  
+  # Loop over all hyperparameter configurations
+  for (j in 1:nrow(hyperparams)) {
+    fold_ROC_AUC <- c()  # Initialize vector to collect AUCs over folds
+    
+    # Forward-chaining folds
+    folds <- list(
+      list(train = 1,    test = 2),
+      list(train = 1:2,  test = 3),
+      list(train = 1:3,  test = 4)
+    )
+    
+    for (fold_idx in seq_along(folds)) {
+      fold <- folds[[fold_idx]]
+      train_data <- do.call(rbind, time_intervals_data[fold$train])
+      test_data  <- time_intervals_data[[fold$test]]
+      
+      # Train model
+      gbm_model <- gbm(occurrenceStatus ~ ., distribution = "bernoulli",
+                       data = train_data,
+                       n.trees = hyperparams$n.trees[j],
+                       interaction.depth = hyperparams$interaction.depth[j],
+                       shrinkage = hyperparams$shrinkage[j],
+                       n.minobsinnode = hyperparams$n.minobsinnode[j],
+                       verbose = FALSE)
+      
+      # Predict and calculate AUC
+      preds <- predict(gbm_model, newdata = test_data, type = "response")
+      auc_val <- pROC::auc(test_data$occurrenceStatus, preds)
+      
+      fold_ROC_AUC <- c(fold_ROC_AUC, auc_val)
+    }
+    
+    # Save result row with mean and per-fold AUCs
+    result_row <- data.frame(
+      n.trees = hyperparams$n.trees[j],
+      interaction.depth = hyperparams$interaction.depth[j],
+      shrinkage = hyperparams$shrinkage[j],
+      n.minobsinnode = hyperparams$n.minobsinnode[j],
+      mean_ROC_AUC = mean(fold_ROC_AUC, na.rm = TRUE),
+      fold_ROC_AUC = toString(round(fold_ROC_AUC, 4))
+    )
+    
+    results_list[[length(results_list) + 1]] <- result_row
+  }
+  
+  # Final training on all 2003–2018 → test on out_of_time_data (1984–2002)
+  final_train <- do.call(rbind, time_intervals_data)
+  
+  for (j in 1:nrow(hyperparams)) {
+    final_model <- gbm(occurrenceStatus ~ ., distribution = "bernoulli",
+                       data = final_train,
+                       n.trees = hyperparams$n.trees[j],
+                       interaction.depth = hyperparams$interaction.depth[j],
+                       shrinkage = hyperparams$shrinkage[j],
+                       n.minobsinnode = hyperparams$n.minobsinnode[j],
+                       verbose = FALSE)
+    
+    final_preds <- predict(final_model, newdata = out_of_time_data, type = "response")
+    auc_final <- pROC::auc(out_of_time_data$occurrenceStatus, final_preds)
+    
+    results_past <- rbind(results_past, data.frame(
+      n.trees = hyperparams$n.trees[j],
+      interaction.depth = hyperparams$interaction.depth[j],
+      shrinkage = hyperparams$shrinkage[j],
+      n.minobsinnode = hyperparams$n.minobsinnode[j],
+      ROC_AUC_valid = auc_final
+    ))
+  }
+  
+  # Save results
+  results_df <- do.call(rbind, results_list)
+  
+  write.csv(results_df,
+            "C:/Users/User/Downloads/Downloads/phd_project/results/hpm/gbm_forw_chain_results.csv", row.names = FALSE)
+  
+  write.csv(results_past,
+            "C:/Users/User/Downloads/Downloads/phd_project/results/hpm/gbm_forw_chain_results_past.csv", row.names = FALSE)
+}
+
+
+
+
+
+
+forward_chaining_gbm_lf <- function(time_intervals_data, hyperparams, out_of_time_data, seed = 42) {
+  stopifnot(is.list(time_intervals_data), length(time_intervals_data) >= 4)
+  set.seed(seed)
+  
+  # Forward-chaining folds (train grows; validate on the next block)
+  folds <- list(
+    list(train = 1,    val = 2),
+    list(train = 1:2,  val = 3),
+    list(train = 1:3,  val = 4)
+  )
+  
+  results_list <- vector("list", nrow(hyperparams))
+  
+  # 1) CV over the grid
+  for (j in seq_len(nrow(hyperparams))) {
+    fold_auc <- numeric(length(folds))
+    
+    for (k in seq_along(folds)) {
+      tr_idx <- folds[[k]]$train
+      va_idx <- folds[[k]]$val
+      
+      train_data <- do.call(rbind, time_intervals_data[tr_idx])
+      val_data   <- time_intervals_data[[va_idx]]
+      
+      m <- gbm::gbm(
+        occurrenceStatus ~ ., distribution = "bernoulli",
+        data = train_data,
+        n.trees = hyperparams$n.trees[j],
+        interaction.depth = hyperparams$interaction.depth[j],
+        shrinkage = hyperparams$shrinkage[j],
+        n.minobsinnode = hyperparams$n.minobsinnode[j],
+        verbose = FALSE
+      )
+      
+      p <- predict(m, newdata = val_data, type = "response")
+      fold_auc[k] <- as.numeric(pROC::auc(val_data$occurrenceStatus, p))
+    }
+    
+    results_list[[j]] <- data.frame(
+      n.trees = hyperparams$n.trees[j],
+      interaction.depth = hyperparams$interaction.depth[j],
+      shrinkage = hyperparams$shrinkage[j],
+      n.minobsinnode = hyperparams$n.minobsinnode[j],
+      mean_ROC_AUC = mean(fold_auc, na.rm = TRUE),
+      fold_ROC_AUC = paste(round(fold_auc, 4), collapse = ",")
+    )
+  }
+  
+  cv_results <- do.call(rbind, results_list)
+  
+  # 2) LAST-FOLD final training window (ONLY last TSS training window)
+  last_tr_idx <- folds[[length(folds)]]$train
+  final_train <- do.call(rbind, time_intervals_data[last_tr_idx])
+  
+  # 3) Evaluate on OOD test for ALL hyperparameter rows
+  results_past_list <- vector("list", nrow(hyperparams))
+  for (j in seq_len(nrow(hyperparams))) {
+    final_model_j <- gbm::gbm(
+      occurrenceStatus ~ ., distribution = "bernoulli",
+      data = final_train,
+      n.trees = hyperparams$n.trees[j],
+      interaction.depth = hyperparams$interaction.depth[j],
+      shrinkage = hyperparams$shrinkage[j],
+      n.minobsinnode = hyperparams$n.minobsinnode[j],
+      verbose = FALSE
+    )
+    
+    final_preds_j <- predict(final_model_j, newdata = out_of_time_data, type = "response")
+    auc_final_j <- as.numeric(pROC::auc(out_of_time_data$occurrenceStatus, final_preds_j))
+    
+    results_past_list[[j]] <- data.frame(
+      n.trees = hyperparams$n.trees[j],
+      interaction.depth = hyperparams$interaction.depth[j],
+      shrinkage = hyperparams$shrinkage[j],
+      n.minobsinnode = hyperparams$n.minobsinnode[j],
+      ROC_AUC_test = auc_final_j
+    )
+  }
+  
+  results_past <- do.call(rbind, results_past_list)
+  
+  # 4) Save
+  utils::write.csv(
+    cv_results,
+    "C:/Users/User/Downloads/Downloads/phd_project/results/hpm/gbm_forw_chain_results_lf.csv",
+    row.names = FALSE
+  )
+  
+  utils::write.csv(
+    results_past,
+    "C:/Users/User/Downloads/Downloads/phd_project/results/hpm/gbm_forw_chain_results_past_lf.csv",
+    row.names = FALSE
+  )
+  
+  invisible(list(cv_results = cv_results, test_all = results_past))
+}
+
+
+
+forward_chaining_rf <- function(time_intervals_data, hyperparams_rf, out_of_time_data) {
+  results_list <- list()
+  results_past <- data.frame()
+  
+  # Define folds: forward-chaining setup
+  folds <- list(
+    list(train = 1,    test = 2),  # 2003–2006 → 2007–2010
+    list(train = 1:2,  test = 3),  # 2003–2010 → 2011–2014
+    list(train = 1:3,  test = 4)   # 2003–2014 → 2015–2018
+  )
+  
+  for (j in 1:nrow(hyperparams_rf)) {
+    fold_ROC_AUC <- c()
+    
+    for (fold_idx in seq_along(folds)) {
+      fold <- folds[[fold_idx]]
+      train_data <- do.call(rbind, time_intervals_data[fold$train])
+      test_data  <- time_intervals_data[[fold$test]]
+      
+      # Convert to factors
+      train_data$occurrenceStatus <- factor(train_data$occurrenceStatus)
+      test_data$occurrenceStatus  <- factor(test_data$occurrenceStatus)
+      
+      rf_model <- randomForest(occurrenceStatus ~ .,
+                               data = train_data,
+                               ntree = hyperparams_rf$n.trees[j],
+                               nodesize = hyperparams_rf$nodesize[j],
+                               maxnodes = hyperparams_rf$maxnodes[j])
+      
+      # Predict and compute AUC
+      prob_predictions <- predict(rf_model, newdata = test_data, type = "prob")[, 2]
+      auc_val <- pROC::auc(test_data$occurrenceStatus, prob_predictions)
+      
+      fold_ROC_AUC <- c(fold_ROC_AUC, auc_val)
+    }
+    
+    # Store results per hyperparameter set
+    result_row <- data.frame(
+      n.trees = hyperparams_rf$n.trees[j],
+      nodesize = hyperparams_rf$nodesize[j],
+      maxnodes = hyperparams_rf$maxnodes[j],
+      mean_ROC_AUC = mean(fold_ROC_AUC, na.rm = TRUE),
+      fold_ROC_AUC = toString(round(fold_ROC_AUC, 4))
+    )
+    
+    
+    results_list[[length(results_list) + 1]] <- result_row
+  }
+  
+  # Final training on full data (2003–2018) → test on past (1984–2002)
+  final_train <- do.call(rbind, time_intervals_data)
+  final_train$occurrenceStatus <- factor(final_train$occurrenceStatus)
+  out_of_time_data$occurrenceStatus <- factor(out_of_time_data$occurrenceStatus)
+  
+  for (j in 1:nrow(hyperparams_rf)) {
+    rf_model_final <- randomForest(occurrenceStatus ~ .,
+                                   data = final_train,
+                                   ntree = hyperparams_rf$n.trees[j],
+                                   maxnodes = hyperparams_rf$max_depth[j],
+                                   nodesize = hyperparams_rf$min_samples_split[j])
+    
+    final_probs <- predict(rf_model_final, newdata = out_of_time_data, type = "prob")[, 2]
+    auc_final <- pROC::auc(out_of_time_data$occurrenceStatus, final_probs)
+    
+    results_past <- rbind(results_past, data.frame(
+      n.trees = hyperparams_rf$n.trees[j],
+      nodesize = hyperparams_rf$nodesize[j],
+      maxnodes = hyperparams_rf$maxnodes[j],
+      ROC_AUC_valid = auc_final
+    ))
+  }
+  
+  # Save CSVs
+  results_df <- do.call(rbind, results_list)
+  
+  write.csv(results_df,
+            "C:/Users/User/Downloads/Downloads/phd_project/results/hpm/rf_forw_chain_results.csv", row.names = FALSE)
+  
+  write.csv(results_past,
+            "C:/Users/User/Downloads/Downloads/phd_project/results/hpm/rf_forw_chain_results_past.csv", row.names = FALSE)
+}
+
+
+
+
+
+
+
+
+forward_chaining_rf_lf <- function(time_intervals_data, hyperparams_rf, out_of_time_data, seed = 42) {
+  stopifnot(is.list(time_intervals_data), length(time_intervals_data) >= 4)
+  set.seed(seed)
+  
+  tids <- lapply(time_intervals_data, function(df) {
+    df$occurrenceStatus <- factor(df$occurrenceStatus, levels = c(0, 1))
+    df
+  })
+  out_of_time_data$occurrenceStatus <- factor(out_of_time_data$occurrenceStatus, levels = c(0, 1))
+  
+  folds <- list(
+    list(train = 1,    val = 2),
+    list(train = 1:2,  val = 3),
+    list(train = 1:3,  val = 4)
+  )
+  
+  results_list <- vector("list", nrow(hyperparams_rf))
+  for (j in seq_len(nrow(hyperparams_rf))) {
+    fold_auc <- numeric(length(folds))
+    for (k in seq_along(folds)) {
+      tr_idx <- folds[[k]]$train
+      va_idx <- folds[[k]]$val
+      
+      train_data <- do.call(rbind, tids[tr_idx])
+      val_data   <- tids[[va_idx]]
+      
+      rf_model <- randomForest::randomForest(
+        occurrenceStatus ~ .,
+        data     = train_data,
+        ntree    = hyperparams_rf$n.trees[j],
+        nodesize = hyperparams_rf$nodesize[j],
+        maxnodes = hyperparams_rf$maxnodes[j]
+      )
+      
+      prob_val <- predict(rf_model, newdata = val_data, type = "prob")[, 2]
+      fold_auc[k] <- as.numeric(pROC::auc(val_data$occurrenceStatus, prob_val))
+    }
+    
+    results_list[[j]] <- data.frame(
+      n.trees          = hyperparams_rf$n.trees[j],
+      nodesize         = hyperparams_rf$nodesize[j],
+      maxnodes         = hyperparams_rf$maxnodes[j],
+      ROC_AUC_CV_mean  = mean(fold_auc, na.rm = TRUE),
+      ROC_AUC_CV_folds = paste(round(fold_auc, 4), collapse = ",")
+    )
+  }
+  
+  cv_results <- do.call(rbind, results_list)
+  
+  last_tr_idx <- folds[[length(folds)]]$train
+  final_train <- do.call(rbind, tids[last_tr_idx])
+  
+  results_past_list <- vector("list", nrow(hyperparams_rf))
+  for (j in seq_len(nrow(hyperparams_rf))) {
+    rf_final_j <- randomForest::randomForest(
+      occurrenceStatus ~ .,
+      data     = final_train,
+      ntree    = hyperparams_rf$n.trees[j],
+      nodesize = hyperparams_rf$nodesize[j],
+      maxnodes = hyperparams_rf$maxnodes[j]
+    )
+    prob_test_j <- predict(rf_final_j, newdata = out_of_time_data, type = "prob")[, 2]
+    auc_test_j  <- as.numeric(pROC::auc(out_of_time_data$occurrenceStatus, prob_test_j))
+    
+    results_past_list[[j]] <- data.frame(
+      n.trees      = hyperparams_rf$n.trees[j],
+      nodesize     = hyperparams_rf$nodesize[j],
+      maxnodes     = hyperparams_rf$maxnodes[j],
+      ROC_AUC_test = auc_test_j
+    )
+  }
+  
+  results_past <- do.call(rbind, results_past_list)
+  
+  utils::write.csv(
+    cv_results,
+    "C:/Users/User/Downloads/Downloads/phd_project/results/hpm/rf_forw_chain_results_lf.csv",
+    row.names = FALSE
+  )
+  
+  utils::write.csv(
+    results_past,
+    "C:/Users/User/Downloads/Downloads/phd_project/results/hpm/rf_forw_chain_results_past_lf.csv",
+    row.names = FALSE
+  )
+  
+  invisible(list(cv_results = cv_results, test_all = results_past))
+}
+
+
+
+
+forward_chaining_xgb <- function(time_intervals_data, hyperparams_xgb, out_of_time_data) {
+  results_list <- list()
+  results_past <- data.frame()
+  
+  # Automatically detect features (assumes all folds have the same structure)
+  features <- setdiff(colnames(time_intervals_data[[1]]), "occurrenceStatus")
+  
+  # Define forward-chaining folds
+  folds <- list(
+    list(train = 1,    test = 2),  # 2003–2006 → 2007–2010
+    list(train = 1:2,  test = 3),  # 2003–2010 → 2011–2014
+    list(train = 1:3,  test = 4)   # 2003–2014 → 2015–2018
+  )
+  
+  for (j in 1:nrow(hyperparams_xgb)) {
+    fold_ROC_AUC <- c()
+    
+    for (fold_idx in seq_along(folds)) {
+      fold <- folds[[fold_idx]]
+      train_data <- do.call(rbind, time_intervals_data[fold$train])
+      test_data  <- time_intervals_data[[fold$test]]
+      
+      X_train <- as.matrix(train_data[, features])
+      y_train <- train_data$occurrenceStatus
+      X_test  <- as.matrix(test_data[, features])
+      y_test  <- test_data$occurrenceStatus
+      
+      # Train XGBoost
+      xgb_model <- xgboost(
+        data = X_train,
+        label = y_train,
+        nrounds = hyperparams_xgb$nrounds[j],
+        max_depth = hyperparams_xgb$max_depth[j],
+        eta = hyperparams_xgb$eta[j],
+        subsample = hyperparams_xgb$subsample[j],
+        min_child_weight = hyperparams_xgb$min_child_weight[j],
+        gamma = hyperparams_xgb$gamma[j],
+        colsample_bylevel = hyperparams_xgb$colsample_bylevel[j],
+        objective = "binary:logistic",
+        eval_metric = "auc",
+        verbose = 0
+      )
+      
+      # Predict
+      prob_predictions <- predict(xgb_model, newdata = X_test)
+      auc_val <- pROC::auc(y_test, prob_predictions)
+      fold_ROC_AUC <- c(fold_ROC_AUC, auc_val)
+    }
+    
+    results_list[[length(results_list) + 1]] <- data.frame(
+      nrounds = hyperparams_xgb$nrounds[j],
+      max_depth = hyperparams_xgb$max_depth[j],
+      eta = hyperparams_xgb$eta[j],
+      subsample = hyperparams_xgb$subsample[j],
+      min_child_weight = hyperparams_xgb$min_child_weight[j],
+      gamma = hyperparams_xgb$gamma[j],
+      colsample_bylevel = hyperparams_xgb$colsample_bylevel[j],
+      mean_ROC_AUC = mean(fold_ROC_AUC, na.rm = TRUE),
+      fold_ROC_AUC = toString(round(fold_ROC_AUC, 4))
+    )
+  }
+  
+  # Final training: all (2003–2018) → test on past (1984–2002)
+  final_train <- do.call(rbind, time_intervals_data)
+  X_final <- as.matrix(final_train[, features])
+  y_final <- final_train$occurrenceStatus
+  X_past  <- as.matrix(out_of_time_data[, features])
+  y_past  <- out_of_time_data$occurrenceStatus
+  
+  for (j in 1:nrow(hyperparams_xgb)) {
+    final_model <- xgboost(
+      data = X_final,
+      label = y_final,
+      nrounds = hyperparams_xgb$nrounds[j],
+      max_depth = hyperparams_xgb$max_depth[j],
+      eta = hyperparams_xgb$eta[j],
+      subsample = hyperparams_xgb$subsample[j],
+      min_child_weight = hyperparams_xgb$min_child_weight[j],
+      gamma = hyperparams_xgb$gamma[j],
+      colsample_bylevel = hyperparams_xgb$colsample_bylevel[j],
+      objective = "binary:logistic",
+      eval_metric = "auc",
+      verbose = 0
+    )
+    
+    past_probs <- predict(final_model, newdata = X_past)
+    auc_final <- pROC::auc(y_past, past_probs)
+    
+    results_past <- rbind(results_past, data.frame(
+      nrounds = hyperparams_xgb$nrounds[j],
+      max_depth = hyperparams_xgb$max_depth[j],
+      eta = hyperparams_xgb$eta[j],
+      subsample = hyperparams_xgb$subsample[j],
+      min_child_weight = hyperparams_xgb$min_child_weight[j],
+      gamma = hyperparams_xgb$gamma[j],
+      colsample_bylevel = hyperparams_xgb$colsample_bylevel[j],
+      ROC_AUC_valid = auc_final
+    ))
+  }
+  
+  # Save results
+  results_df <- do.call(rbind, results_list)
+  
+  write.csv(results_df, "C:/Users/User/Downloads/Downloads/phd_project/results/hpm/xgb_forw_chain_results.csv", row.names = FALSE)
+  write.csv(results_past, "C:/Users/User/Downloads/Downloads/phd_project/results/hpm/xgb_forw_chain_results_past.csv", row.names = FALSE)
+}
+
+
+
+
+
+
+
+forward_chaining_xgb_lf <- function(time_intervals_data, hyperparams_xgb, out_of_time_data, seed = 42) {
+  set.seed(seed)
+  stopifnot(is.list(time_intervals_data), length(time_intervals_data) >= 4)
+  
+  features <- setdiff(colnames(time_intervals_data[[1]]), "occurrenceStatus")
+  
+  folds <- list(
+    list(train = 1,    val = 2),
+    list(train = 1:2,  val = 3),
+    list(train = 1:3,  val = 4)
+  )
+  
+  # 1) CV over hyperparameter grid
+  results_list <- vector("list", nrow(hyperparams_xgb))
+  for (j in seq_len(nrow(hyperparams_xgb))) {
+    fold_auc <- numeric(length(folds))
+    for (k in seq_along(folds)) {
+      tr_idx <- folds[[k]]$train
+      va_idx <- folds[[k]]$val
+      
+      train_df <- do.call(rbind, time_intervals_data[tr_idx])
+      val_df   <- time_intervals_data[[va_idx]]
+      
+      y_train <- as.numeric(train_df$occurrenceStatus)
+      y_val   <- as.numeric(val_df$occurrenceStatus)
+      X_train <- as.matrix(train_df[, features, drop = FALSE])
+      X_val   <- as.matrix(val_df[, features,   drop = FALSE])
+      
+      xgb_model <- xgboost::xgboost(
+        data = X_train,
+        label = y_train,
+        nrounds = hyperparams_xgb$nrounds[j],
+        max_depth = hyperparams_xgb$max_depth[j],
+        eta = hyperparams_xgb$eta[j],
+        subsample = hyperparams_xgb$subsample[j],
+        min_child_weight = hyperparams_xgb$min_child_weight[j],
+        gamma = hyperparams_xgb$gamma[j],
+        colsample_bylevel = hyperparams_xgb$colsample_bylevel[j],
+        objective = "binary:logistic",
+        eval_metric = "auc",
+        verbose = 0
+      )
+      
+      prob_val <- predict(xgb_model, newdata = X_val)
+      fold_auc[k] <- as.numeric(pROC::auc(y_val, prob_val))
+    }
+    results_list[[j]] <- data.frame(
+      nrounds = hyperparams_xgb$nrounds[j],
+      max_depth = hyperparams_xgb$max_depth[j],
+      eta = hyperparams_xgb$eta[j],
+      subsample = hyperparams_xgb$subsample[j],
+      min_child_weight = hyperparams_xgb$min_child_weight[j],
+      gamma = hyperparams_xgb$gamma[j],
+      colsample_bylevel = hyperparams_xgb$colsample_bylevel[j],
+      ROC_AUC_CV_mean = mean(fold_auc, na.rm = TRUE),
+      ROC_AUC_CV_folds = paste(round(fold_auc, 4), collapse = ",")
+    )
+  }
+  cv_results <- do.call(rbind, results_list)
+  
+  # 2) LAST-FOLD final training window (evaluate ALL configs)
+  last_tr_idx <- folds[[length(folds)]]$train
+  final_df <- do.call(rbind, time_intervals_data[last_tr_idx])
+  X_final <- as.matrix(final_df[, features, drop = FALSE])
+  y_final <- as.numeric(final_df$occurrenceStatus)
+  
+  X_past <- as.matrix(out_of_time_data[, features, drop = FALSE])
+  y_past <- as.numeric(out_of_time_data$occurrenceStatus)
+  
+  results_past_list <- vector("list", nrow(hyperparams_xgb))
+  for (j in seq_len(nrow(hyperparams_xgb))) {
+    mdl_j <- xgboost::xgboost(
+      data = X_final,
+      label = y_final,
+      nrounds = hyperparams_xgb$nrounds[j],
+      max_depth = hyperparams_xgb$max_depth[j],
+      eta = hyperparams_xgb$eta[j],
+      subsample = hyperparams_xgb$subsample[j],
+      min_child_weight = hyperparams_xgb$min_child_weight[j],
+      gamma = hyperparams_xgb$gamma[j],
+      colsample_bylevel = hyperparams_xgb$colsample_bylevel[j],
+      objective = "binary:logistic",
+      eval_metric = "auc",
+      verbose = 0
+    )
+    prob_test <- predict(mdl_j, newdata = X_past)
+    auc_test  <- as.numeric(pROC::auc(y_past, prob_test))
+    
+    results_past_list[[j]] <- data.frame(
+      nrounds = hyperparams_xgb$nrounds[j],
+      max_depth = hyperparams_xgb$max_depth[j],
+      eta = hyperparams_xgb$eta[j],
+      subsample = hyperparams_xgb$subsample[j],
+      min_child_weight = hyperparams_xgb$min_child_weight[j],
+      gamma = hyperparams_xgb$gamma[j],
+      colsample_bylevel = hyperparams_xgb$colsample_bylevel[j],
+      ROC_AUC_test = auc_test
+    )
+  }
+  results_past <- do.call(rbind, results_past_list)
+  
+  # 3) Save
+  utils::write.csv(
+    cv_results,
+    "C:/Users/User/Downloads/Downloads/phd_project/results/hpm/xgb_forw_chain_results_lf.csv",
+    row.names = FALSE
+  )
+  utils::write.csv(
+    results_past,
+    "C:/Users/User/Downloads/Downloads/phd_project/results/hpm/xgb_forw_chain_results_past_lf.csv",
+    row.names = FALSE
+  )
+  
+  invisible(list(cv_results = cv_results, test_all = results_past))
+}
+
+
+
+
+
+
+forward_chaining_lgb <- function(time_intervals_data, hyperparams_lgbm, out_of_time_data) {
+  
+  results_list <- list()
+  results_past_list <- list()
+  
+  features <- setdiff(colnames(time_intervals_data[[1]]), "occurrenceStatus")
+  
+  # Define forward-chaining folds
+  folds <- list(
+    list(train = 1,    test = 2),
+    list(train = 1:2,  test = 3),
+    list(train = 1:3,  test = 4)
+  )
+  
+  results <- data.frame()
+  results_past <- data.frame()
+  
+  for (j in 1:nrow(hyperparams_lgbm)) {
+    fold_ROC_AUC <- c()
+    
+    for (fold_idx in seq_along(folds)) {
+      fold <- folds[[fold_idx]]
+      train_data <- do.call(rbind, time_intervals_data[fold$train])
+      test_data  <- time_intervals_data[[fold$test]]
+      
+      y_train <- train_data$occurrenceStatus
+      y_test  <- test_data$occurrenceStatus
+      
+      lgb_train <- lgb.Dataset(as.matrix(train_data[, features]), label = y_train)
+      
+      lgb_params <- list(
+        objective = "binary",
+        metric = "auc",
+        boosting_type = "gbdt",
+        num_iterations = hyperparams_lgbm$num_iterations[j],
+        num_leaves = hyperparams_lgbm$num_leaves[j],
+        learning_rate = hyperparams_lgbm$learning_rate[j],
+        subsample = hyperparams_lgbm$subsample[j],
+        colsample_bytree = hyperparams_lgbm$colsample_bytree[j],
+        verbose = -1
+      )
+      
+      lgb_model <- lgb.train(params = lgb_params, data = lgb_train)
+      
+      prob_predictions <- predict(lgb_model, as.matrix(test_data[, features]))
+      ROC_AUC <- pROC::auc(y_test, prob_predictions)
+      fold_ROC_AUC <- c(fold_ROC_AUC, ROC_AUC)
+    }
+    
+    results <- rbind(results, data.frame(
+      num_iterations = hyperparams_lgbm$num_iterations[j],
+      num_leaves = hyperparams_lgbm$num_leaves[j],
+      learning_rate = hyperparams_lgbm$learning_rate[j],
+      subsample = hyperparams_lgbm$subsample[j],
+      colsample_bytree = hyperparams_lgbm$colsample_bytree[j],
+      mean_ROC_AUC = mean(fold_ROC_AUC),
+      fold_ROC_AUC = toString(round(fold_ROC_AUC, 4))
+    ))
+    
+    # Final model on full train (2003–2018) → test on past (1984–2002)
+    final_train <- do.call(rbind, time_intervals_data)
+    y_final <- final_train$occurrenceStatus
+    y_valid <- out_of_time_data$occurrenceStatus
+    
+    lgb_final <- lgb.Dataset(as.matrix(final_train[, features]), label = y_final)
+    
+    lgb_model <- lgb.train(params = lgb_params, data = lgb_final)
+    
+    valid_predictions <- predict(lgb_model, as.matrix(out_of_time_data[, features]))
+    ROC_AUC_valid <- pROC::auc(y_valid, valid_predictions)
+    
+    results_past <- rbind(results_past, data.frame(
+      num_iterations = hyperparams_lgbm$num_iterations[j],
+      num_leaves = hyperparams_lgbm$num_leaves[j],
+      learning_rate = hyperparams_lgbm$learning_rate[j],
+      subsample = hyperparams_lgbm$subsample[j],
+      colsample_bytree = hyperparams_lgbm$colsample_bytree[j],
+      ROC_AUC_valid = ROC_AUC_valid
+    ))
+  }
+  
+  # Save results
+  write.csv(results, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/hpm/", "lgb_forw_chain_results.csv"), row.names = FALSE)
+  write.csv(results_past, paste0("C:/Users/User/Downloads/Downloads/phd_project/results/hpm/", "lgb_forw_chain_results_past.csv"), row.names = FALSE)
+} 
+
+
+
+
+
+
+forward_chaining_lgb_lf <- function(time_intervals_data, hyperparams_lgbm, out_of_time_data, seed = 42) {
+  set.seed(seed)
+  stopifnot(is.list(time_intervals_data), length(time_intervals_data) >= 4)
+  
+  features <- setdiff(colnames(time_intervals_data[[1]]), "occurrenceStatus")
+  
+  folds <- list(
+    list(train = 1,    val = 2),
+    list(train = 1:2,  val = 3),
+    list(train = 1:3,  val = 4)
+  )
+  
+  # --- 1) CV over all hyperparameters ---
+  results_list <- vector("list", nrow(hyperparams_lgbm))
+  
+  for (j in seq_len(nrow(hyperparams_lgbm))) {
+    fold_auc <- numeric(length(folds))
+    
+    for (k in seq_along(folds)) {
+      tr_idx <- folds[[k]]$train
+      va_idx <- folds[[k]]$val
+      
+      train_df <- do.call(rbind, time_intervals_data[tr_idx])
+      val_df   <- time_intervals_data[[va_idx]]
+      
+      y_train <- as.numeric(train_df$occurrenceStatus)
+      y_val   <- as.numeric(val_df$occurrenceStatus)
+      
+      lgb_train <- lgb.Dataset(data = as.matrix(train_df[, features, drop = FALSE]),
+                               label = y_train)
+      
+      lgb_params <- list(
+        objective        = "binary",
+        metric           = "auc",
+        boosting_type    = "gbdt",
+        num_iterations   = hyperparams_lgbm$num_iterations[j],
+        num_leaves       = hyperparams_lgbm$num_leaves[j],
+        learning_rate    = hyperparams_lgbm$learning_rate[j],
+        bagging_fraction = hyperparams_lgbm$subsample[j],
+        feature_fraction = hyperparams_lgbm$colsample_bytree[j],
+        verbose          = -1
+      )
+      
+      lgb_model <- lgb.train(params = lgb_params, data = lgb_train)
+      prob_val  <- predict(lgb_model, as.matrix(val_df[, features, drop = FALSE]))
+      fold_auc[k] <- as.numeric(pROC::auc(y_val, prob_val))
+    }
+    
+    results_list[[j]] <- data.frame(
+      num_iterations   = hyperparams_lgbm$num_iterations[j],
+      num_leaves       = hyperparams_lgbm$num_leaves[j],
+      learning_rate    = hyperparams_lgbm$learning_rate[j],
+      subsample        = hyperparams_lgbm$subsample[j],
+      colsample_bytree = hyperparams_lgbm$colsample_bytree[j],
+      ROC_AUC_CV_mean  = mean(fold_auc, na.rm = TRUE),
+      ROC_AUC_CV_folds = paste(round(fold_auc, 4), collapse = ",")
+    )
+  }
+  
+  cv_results <- do.call(rbind, results_list)
+  
+  # --- 2) LAST-FOLD training for ALL configs ---
+  last_tr_idx <- folds[[length(folds)]]$train
+  final_df <- do.call(rbind, time_intervals_data[last_tr_idx])
+  y_final  <- as.numeric(final_df$occurrenceStatus)
+  
+  X_past <- as.matrix(out_of_time_data[, features, drop = FALSE])
+  y_past <- as.numeric(out_of_time_data$occurrenceStatus)
+  
+  results_past_list <- vector("list", nrow(hyperparams_lgbm))
+  
+  for (j in seq_len(nrow(hyperparams_lgbm))) {
+    lgb_final <- lgb.Dataset(data = as.matrix(final_df[, features, drop = FALSE]),
+                             label = y_final)
+    
+    lgb_params <- list(
+      objective        = "binary",
+      metric           = "auc",
+      boosting_type    = "gbdt",
+      num_iterations   = hyperparams_lgbm$num_iterations[j],
+      num_leaves       = hyperparams_lgbm$num_leaves[j],
+      learning_rate    = hyperparams_lgbm$learning_rate[j],
+      bagging_fraction = hyperparams_lgbm$subsample[j],
+      feature_fraction = hyperparams_lgbm$colsample_bytree[j],
+      verbose          = -1
+    )
+    
+    lgb_model <- lgb.train(params = lgb_params, data = lgb_final)
+    prob_test <- predict(lgb_model, X_past)
+    auc_test  <- as.numeric(pROC::auc(y_past, prob_test))
+    
+    results_past_list[[j]] <- data.frame(
+      num_iterations   = hyperparams_lgbm$num_iterations[j],
+      num_leaves       = hyperparams_lgbm$num_leaves[j],
+      learning_rate    = hyperparams_lgbm$learning_rate[j],
+      subsample        = hyperparams_lgbm$subsample[j],
+      colsample_bytree = hyperparams_lgbm$colsample_bytree[j],
+      ROC_AUC_test     = auc_test
+    )
+  }
+  
+  results_past <- do.call(rbind, results_past_list)
+  
+  # --- 3) Save ---
+  utils::write.csv(cv_results,
+                   "C:/Users/User/Downloads/Downloads/phd_project/results/hpm/lgb_forw_chain_results_lf.csv",
+                   row.names = FALSE
+  )
+  
+  utils::write.csv(results_past,
+                   "C:/Users/User/Downloads/Downloads/phd_project/results/hpm/lgb_forw_chain_results_past_lf.csv",
+                   row.names = FALSE
+  )
+  
+  invisible(list(cv_results = cv_results, past_results = results_past))
+}
+
+
+
