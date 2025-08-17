@@ -64,7 +64,11 @@ source("config/hyperparams.R") # Defines hyperparameter grids
 
 ```r
 source("main.R") # Loads data, performs spatial / spatio-temporal CV, runs models
- ``` 
+ ```
+**Additionally**:
+```r
+source("functions/maxent_example.R") # demonstration of maxent 
+ ```
 
     
 ## The code and associated dataset used in this study are archived on Zenodo:
